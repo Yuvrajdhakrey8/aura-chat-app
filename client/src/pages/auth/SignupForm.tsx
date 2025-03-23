@@ -4,18 +4,32 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { SignupFormData, LoginInput, userSignupSchema } from "./const";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { signup } from "@/services/AuthServices";
+import toast from "react-hot-toast";
 
 const SignupForm: React.FC = () => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<SignupFormData>({
     resolver: yupResolver(userSignupSchema),
   });
 
   const onSubmit = (data: SignupFormData) => {
-    console.log("Signup Data:", data);
+    const payload = { email: data.email, password: data.password };
+
+    signup(payload)
+      .then((res) => {
+        const { success, msg } = res as any;
+        if (!success) throw new Error(msg);
+        toast.success(msg);
+        reset();
+      })
+      .catch((err: Error) =>
+        toast.error(err.message || "Internal server error")
+      );
   };
 
   return (
@@ -57,7 +71,10 @@ const SignupForm: React.FC = () => {
         )}
       </div>
 
-      <Button type="submit" className="w-full rounded-full bg-purple-500 text-white cursor-pointer">
+      <Button
+        type="submit"
+        className="w-full rounded-full bg-purple-500 text-white cursor-pointer"
+      >
         Signup
       </Button>
     </form>

@@ -1,0 +1,4 @@
+PORT=8000
+JWT_KEY="your_secret_key"
+ORIGIN="http://localhost:5173"
+MONGO_URI="mongodb://localhost:27017/aura-chat-app"

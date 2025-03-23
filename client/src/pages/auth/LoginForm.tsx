@@ -4,18 +4,32 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { LoginFormData, LoginInput, userLoginSchema } from "./const";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { login } from "@/services/AuthServices";
+import toast from "react-hot-toast";
 
 const LoginForm: React.FC = () => {
   const {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<LoginFormData>({
     resolver: yupResolver(userLoginSchema),
   });
 
   const onSubmit = (data: LoginFormData) => {
-    console.log("Login Data:", data);
+    const payload = { email: data.email, password: data.password };
+
+    login(payload)
+      .then((res) => {
+        const { success, msg } = res as any;
+        if (!success) throw new Error(msg);
+        toast.success(msg);
+        reset();
+      })
+      .catch((err: Error) =>
+        toast.error(err.message || "Internal server error")
+      );
   };
 
   return (
