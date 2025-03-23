@@ -101,6 +101,7 @@ export const login = async (req, res) => {
     return res.status(201).send({
       success: true,
       msg: "User logged in successfully",
+      data: user,
     });
   } catch (error) {
     console.log("signUp ~ error:", error);

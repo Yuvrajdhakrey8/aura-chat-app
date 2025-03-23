@@ -6,8 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { login } from "@/services/AuthServices";
 import toast from "react-hot-toast";
+import { IUserData } from "@/types/Auth.types";
+import { useNavigate } from "react-router";
+import { ApiResponse } from "@/types/common.types";
 
 const LoginForm: React.FC = () => {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -22,9 +26,18 @@ const LoginForm: React.FC = () => {
 
     login(payload)
       .then((res) => {
-        const { success, msg } = res as any;
+        const { success, msg, data } = res as ApiResponse<IUserData>;
         if (!success) throw new Error(msg);
         toast.success(msg);
+
+        if (data) {
+          if (data?.isSetUpComplete) {
+            navigate("/chat");
+          } else {
+            navigate("/profile");
+          }
+        }
+
         reset();
       })
       .catch((err: Error) =>

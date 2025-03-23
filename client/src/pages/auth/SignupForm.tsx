@@ -6,8 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { signup } from "@/services/AuthServices";
 import toast from "react-hot-toast";
+import { ApiResponse } from "@/types/common.types";
+import { IUserData } from "@/types/Auth.types";
+import { useNavigate } from "react-router";
 
 const SignupForm: React.FC = () => {
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -22,9 +27,13 @@ const SignupForm: React.FC = () => {
 
     signup(payload)
       .then((res) => {
-        const { success, msg } = res as any;
+        const { success, msg } = res as ApiResponse<IUserData>;
         if (!success) throw new Error(msg);
         toast.success(msg);
+
+        if (data) {
+          navigate("/profile");
+        }
         reset();
       })
       .catch((err: Error) =>
