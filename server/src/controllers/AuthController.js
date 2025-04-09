@@ -1,6 +1,12 @@
 import { User } from "../models/UserModel.js";
 import jwt from "jsonwebtoken";
 import { compare } from "bcrypt";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const options = {
   expiresIn: 1 * 24 * 60 * 60 * 1000,
@@ -125,7 +131,9 @@ export const getUserInfo = async (req, res) => {
 export const updateUserInfo = async (req, res) => {
   try {
     const { id } = req.user;
-    const { firstName, lastName, selectedColor, profileImage } = req.body;
+    const userData = JSON.parse(req.body.data);
+    const { firstName, lastName, selectedColor, deleteProfileImage } = userData;
+    const profileImage = req.file?.path.replace(/\\/g, "/");
 
     if (!firstName || !lastName || !selectedColor) {
       return res.status(400).send({
@@ -142,16 +150,43 @@ export const updateUserInfo = async (req, res) => {
       });
     }
 
+    const updateFields = {
+      firstName,
+      lastName,
+      selectedColor,
+      isSetUpComplete: true,
+    };
+
+    if (deleteProfileImage && user.profileImage) {
+      const fsPath = path.join(
+        __dirname,
+        "..",
+        "..",
+        "uploads",
+        path.basename(user.profileImage)
+      );
+
+      fs.access(fsPath, fs.constants.F_OK, (err) => {
+        if (!err) {
+          fs.unlink(fsPath, (err) => {
+            if (err) console.error("❌ Failed to delete profile image:", err);
+            else console.log("✅ Profile image deleted:", fsPath);
+          });
+        } else {
+          console.warn("⚠️ File does not exist, cannot delete:", fsPath);
+        }
+      });
+
+      updateFields.profileImage = "";
+    }
+
+    if (profileImage) {
+      updateFields.profileImage = profileImage;
+    }
+
     await User.updateOne(
       { _id: id },
-      {
-        $set: {
-          firstName,
-          lastName,
-          selectedColor,
-          isSetUpComplete: true,
-        },
-      },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
 

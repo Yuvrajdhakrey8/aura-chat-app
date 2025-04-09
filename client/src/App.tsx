@@ -9,7 +9,7 @@ import { IUserData } from "./types/Auth.types";
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const { setUserInfo } = useAppStore();
+  const { setUserInfo, setIsInfoLoaded } = useAppStore();
 
   const getUserInfo = () => {
     getUserData()
@@ -27,7 +27,10 @@ const App: React.FC = () => {
       .catch((err: Error) => {
         console.log("getUserInfo", err);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setIsInfoLoaded(true);
+      });
   };
 
   useEffect(() => {

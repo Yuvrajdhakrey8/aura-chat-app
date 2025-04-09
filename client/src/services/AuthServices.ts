@@ -1,4 +1,4 @@
-import { ISignupAuthPayload, IUpdateUserPayload } from "@/types/Auth.types";
+import { ISignupAuthPayload } from "@/types/Auth.types";
 import { axiosClient, Routes } from "@/utils/constants";
 import { isAxiosError } from "axios";
 
@@ -47,7 +47,7 @@ export const getUserData = async () => {
   }
 };
 
-export const updateUserData = async (payload: IUpdateUserPayload) => {
+export const updateUserData = async (payload: FormData) => {
   try {
     const res = await axiosClient.patch(
       `${Routes.AUTH_ROUTES}/update-user`,

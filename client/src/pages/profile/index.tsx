@@ -1,7 +1,7 @@
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { colors, getColor } from "@/lib/utils";
 import { useAppStore } from "@/store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { IoArrowBack } from "react-icons/io5";
 import { FaTrash, FaPlus } from "react-icons/fa";
 import { Input } from "@/components/ui/input";
@@ -12,21 +12,27 @@ import toast from "react-hot-toast";
 import { updateUserData } from "@/services/AuthServices";
 import { useNavigate } from "react-router";
 import { RoutesEnum } from "@/routes/const";
+import { HOST } from "@/utils/constants";
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [image, setImage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [selectedColor, setSelectedColor] = useState(0);
-  const { userInfo } = useAppStore();
+  const { userInfo, setUserInfo } = useAppStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (userInfo?.isSetUpComplete) {
       setFirstName(userInfo?.firstName ?? "");
       setLastName(userInfo?.lastName ?? "");
       setSelectedColor(userInfo?.selectedColor ?? 0);
+    }
+    if (userInfo?.profileImage) {
+      setImage(`${HOST}/${userInfo?.profileImage}`);
     }
   }, []);
 
@@ -43,30 +49,34 @@ const Profile: React.FC = () => {
     return true;
   };
 
-  const updateUser = () => {
+  const updateUser = async () => {
     const valid = validator();
 
     if (!valid) return;
 
-    const payload = {
+    const formData = new FormData();
+
+    const userData = {
       firstName,
       lastName,
       selectedColor,
-      // profileImage: image,
+      deleteProfileImage: !image && !imageFile,
     };
 
-    updateUserData(payload)
+    formData.append("data", JSON.stringify(userData));
+
+    if (imageFile) {
+      formData.append("profileImage", imageFile);
+    }
+
+    updateUserData(formData)
       .then((res) => {
         const { success, msg, data } = res as ApiResponse<IUserData>;
         if (!success) throw new Error(msg);
 
-        if (data) {
-          if (data?.isSetUpComplete) {
-            toast.success(msg);
-            // navigate("/");
-          } else {
-            // navigate("/profile");
-          }
+        if (data && data?.isSetUpComplete) {
+          toast.success(msg);
+          setUserInfo(data);
         }
       })
       .catch((err: Error) =>
@@ -76,6 +86,28 @@ const Profile: React.FC = () => {
 
   const handleNavigate = () => {
     return navigate(RoutesEnum.AUTH);
+  };
+
+  const handleFileInputClick = () => {
+    if (fileInputRef?.current) {
+      fileInputRef?.current.click();
+    }
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (file) {
+      setImageFile(file);
+      setImage(URL.createObjectURL(file));
+    }
+  };
+
+  const handleDeleteImage = () => {
+    setImage("");
+    setImageFile(null);
   };
 
   return (
@@ -106,14 +138,19 @@ const Profile: React.FC = () => {
                     selectedColor
                   )}`}
                 >
-                  {firstName
-                    ? firstName.split("").shift()
+                  {userInfo?.firstName && userInfo.lastName
+                    ? `${userInfo.firstName
+                        .split("")
+                        .shift()} ${userInfo.lastName.split("").shift()}`
                     : userInfo?.email.split("").shift()}
                 </div>
               )}
             </Avatar>
             {hovered && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 ring-fuchsia-50 rounded-full">
+              <div
+                onClick={image ? handleDeleteImage : handleFileInputClick}
+                className="absolute inset-0 flex items-center justify-center bg-black/50 ring-fuchsia-50 rounded-full"
+              >
                 {image ? (
                   <FaTrash className="text-white text-3xl cursor-pointer" />
                 ) : (
@@ -121,6 +158,14 @@ const Profile: React.FC = () => {
                 )}
               </div>
             )}
+            <input
+              type="file"
+              className="hidden"
+              ref={fileInputRef}
+              accept=".jpeg, .png, .jpg, .svg, .webp"
+              onChange={handleInputChange}
+              name="profileImage"
+            />
           </div>
           <div className="flex min-w-32 md:max-w-64 flex-col gap-5 text-white items-center justify-center">
             <div className="w-full">
@@ -165,7 +210,7 @@ const Profile: React.FC = () => {
         </div>
         <div className="w-full">
           <Button
-            className="h-10 w-full bg-purple-700 hover:bg-purple-900 transition-all duration-300 rounded-t-lg text-white"
+            className="h-10 w-full cursor-pointer bg-purple-700 hover:bg-purple-900 transition-all duration-300 rounded-t-lg text-white"
             onClick={updateUser}
           >
             Save Changes
