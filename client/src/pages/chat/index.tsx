@@ -1,11 +1,23 @@
-import React from 'react'
+import { RoutesEnum } from "@/routes/const";
+import { useAppStore } from "@/store";
+import { useEffect } from "react";
+import { useNavigate } from "react-router";
 
 const Chat = () => {
-  return (
-    <div>
-      Chats
-    </div>
-  )
-}
+  const { userInfo } = useAppStore();
+  const navigate = useNavigate();
 
-export default Chat
+  useEffect(() => {
+    if (!userInfo?.isSetUpComplete) {
+      navigate(RoutesEnum.PROFILE);
+    }
+  }, []);
+
+  return (
+    <>
+      <div>Chats</div>
+    </>
+  );
+};
+
+export default Chat;

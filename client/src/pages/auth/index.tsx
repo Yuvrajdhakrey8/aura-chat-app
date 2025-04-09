@@ -47,7 +47,7 @@ const Auth: React.FC = () => {
           </div>
         </div>
         <div className="hidden xl:flex justify-center items-center">
-            <img src={BackgroundImage} alt="Background Image"/>
+          <img src={BackgroundImage} alt="Background Image" />
         </div>
       </div>
     </div>

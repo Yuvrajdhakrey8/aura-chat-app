@@ -9,8 +9,11 @@ import toast from "react-hot-toast";
 import { ApiResponse } from "@/types/common.types";
 import { IUserData } from "@/types/Auth.types";
 import { useNavigate } from "react-router";
+import { useAppStore } from "@/store";
+import { RoutesEnum } from "@/routes/const";
 
 const SignupForm: React.FC = () => {
+  const { setUserInfo } = useAppStore();
   const navigate = useNavigate();
 
   const {
@@ -22,18 +25,19 @@ const SignupForm: React.FC = () => {
     resolver: yupResolver(userSignupSchema),
   });
 
-  const onSubmit = (data: SignupFormData) => {
-    const payload = { email: data.email, password: data.password };
+  const onSubmit = (formData: SignupFormData) => {
+    const payload = { email: formData.email, password: formData.password };
 
     signup(payload)
       .then((res) => {
-        const { success, msg } = res as ApiResponse<IUserData>;
+        const { success, msg, data } = res as ApiResponse<IUserData>;
         if (!success) throw new Error(msg);
-        toast.success(msg);
 
         if (data) {
-          navigate("/profile");
+          setUserInfo(data);
+          navigate(RoutesEnum.PROFILE);
         }
+        toast.success(msg);
         reset();
       })
       .catch((err: Error) =>

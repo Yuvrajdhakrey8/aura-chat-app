@@ -11,4 +11,12 @@ export interface IUserData {
   lastName?: string;
   profileImage?: string;
   isSetUpComplete: boolean;
+  selectedColor?: number;
+}
+
+export interface IUpdateUserPayload {
+  firstName: string;
+  lastName: string;
+  profileImage?: string;
+  selectedColor: number;
 }

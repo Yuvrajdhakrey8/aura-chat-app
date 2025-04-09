@@ -33,7 +33,7 @@ export const signUp = async (req, res) => {
 
     const token = jwt.sign({ id: savedUser._id }, process.env.JWT_KEY, options);
 
-    res.cookie("jwt", token, {
+    res.cookie("token", token, {
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
       secure: true,
       sameSite: "None",
@@ -45,7 +45,6 @@ export const signUp = async (req, res) => {
       data: savedUser,
     });
   } catch (error) {
-    console.log("signUp ~ error:", error);
     return res
       .status(500)
       .send({ success: false, msg: "Internal server error" });
@@ -79,20 +78,9 @@ export const login = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImage: user.profileImage,
-        isSetUpComplete: user.isSetUpComplete,
-      },
-      process.env.JWT_KEY,
-      options
-    );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_KEY, options);
 
-    res.cookie("jwt", token, {
+    res.cookie("token", token, {
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
       secure: true,
       sameSite: "None",
@@ -100,11 +88,81 @@ export const login = async (req, res) => {
 
     return res.status(201).send({
       success: true,
-      msg: "User logged in successfully",
+      msg: "Logged in successfully",
       data: user,
     });
   } catch (error) {
-    console.log("signUp ~ error:", error);
+    return res
+      .status(500)
+      .send({ success: false, msg: "Internal server error" });
+  }
+};
+
+export const getUserInfo = async (req, res) => {
+  try {
+    const { id } = req.user;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(400).send({
+        success: false,
+        msg: "User not found",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      msg: "User info fetched successfully",
+      data: user,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .send({ success: false, msg: "Internal server error" });
+  }
+};
+
+export const updateUserInfo = async (req, res) => {
+  try {
+    const { id } = req.user;
+    const { firstName, lastName, selectedColor, profileImage } = req.body;
+
+    if (!firstName || !lastName || !selectedColor) {
+      return res.status(400).send({
+        success: false,
+        msg: "First Name, Last Name, and Color selection is required",
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(400).send({
+        success: false,
+        msg: "User not found",
+      });
+    }
+
+    await User.updateOne(
+      { _id: id },
+      {
+        $set: {
+          firstName,
+          lastName,
+          selectedColor,
+          isSetUpComplete: true,
+        },
+      },
+      { new: true, runValidators: true }
+    );
+
+    const updatedUser = await User.findById(id);
+
+    return res.status(200).send({
+      success: true,
+      msg: "User info updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
     return res
       .status(500)
       .send({ success: false, msg: "Internal server error" });

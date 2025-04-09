@@ -21,6 +21,9 @@ const userSchema = new Schema(
     profileImage: {
       type: String,
     },
+    selectedColor: {
+      type: String,
+    },
     isSetUpComplete: {
       type: Boolean,
       default: false,

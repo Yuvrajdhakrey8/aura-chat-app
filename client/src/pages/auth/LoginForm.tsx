@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { LoginFormData, LoginInput, userLoginSchema } from "./const";
@@ -9,9 +9,13 @@ import toast from "react-hot-toast";
 import { IUserData } from "@/types/Auth.types";
 import { useNavigate } from "react-router";
 import { ApiResponse } from "@/types/common.types";
+import { useAppStore } from "@/store";
+import { RoutesEnum } from "@/routes/const";
 
 const LoginForm: React.FC = () => {
   const navigate = useNavigate();
+  const { setUserInfo, userInfo } = useAppStore();
+
   const {
     register,
     handleSubmit,
@@ -21,20 +25,27 @@ const LoginForm: React.FC = () => {
     resolver: yupResolver(userLoginSchema),
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    const payload = { email: data.email, password: data.password };
+  useEffect(() => {
+    if (userInfo && userInfo?.isSetUpComplete) {
+      navigate(RoutesEnum.CHATS);
+    }
+  }, []);
+
+  const onSubmit = (formData: LoginFormData) => {
+    const payload = { email: formData.email, password: formData.password };
 
     login(payload)
       .then((res) => {
         const { success, msg, data } = res as ApiResponse<IUserData>;
         if (!success) throw new Error(msg);
-        toast.success(msg);
 
         if (data) {
+          setUserInfo(data);
           if (data?.isSetUpComplete) {
-            navigate("/chat");
+            toast.success(msg);
+            navigate(RoutesEnum.CHATS);
           } else {
-            navigate("/profile");
+            navigate(RoutesEnum.PROFILE);
           }
         }
 
