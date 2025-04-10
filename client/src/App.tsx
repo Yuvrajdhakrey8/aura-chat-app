@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { appRoutes, RouteGuard } from "./routes/Routes";
-import { RoutesEnum } from "./routes/const";
 import { useAppStore } from "./store";
 import { getUserData } from "./services/AuthServices";
 import { ApiResponse } from "./types/common.types";
 import { IUserData } from "./types/Auth.types";
+import PageNotFound from "./pages/PageNotFound";
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,7 @@ const App: React.FC = () => {
             element={<RouteGuard isPrivate={isPrivate}>{element}</RouteGuard>}
           />
         ))}
-        <Route path="*" element={<Navigate to={RoutesEnum.AUTH} />} />
+        <Route path="*" element={<PageNotFound />} />
       </Routes>
     </BrowserRouter>
   );

@@ -135,7 +135,12 @@ export const updateUserInfo = async (req, res) => {
     const { firstName, lastName, selectedColor, deleteProfileImage } = userData;
     const profileImage = req.file?.path.replace(/\\/g, "/");
 
-    if (!firstName || !lastName || !selectedColor) {
+    if (
+      !firstName ||
+      !lastName ||
+      selectedColor === undefined ||
+      selectedColor === null
+    ) {
       return res.status(400).send({
         success: false,
         msg: "First Name, Last Name, and Color selection is required",
@@ -196,6 +201,24 @@ export const updateUserInfo = async (req, res) => {
       success: true,
       msg: "User info updated successfully",
       data: updatedUser,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .send({ success: false, msg: "Internal server error" });
+  }
+};
+
+export const logOutUser = async (req, res) => {
+  try {
+    res.cookie("token", "", {
+      httpOnly: true,
+      expires: new Date(0),
+    });
+
+    return res.status(200).send({
+      success: true,
+      msg: "User logout successfully",
     });
   } catch (error) {
     return res

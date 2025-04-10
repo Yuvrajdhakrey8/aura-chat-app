@@ -65,3 +65,22 @@ export const updateUserData = async (payload: FormData) => {
     return error;
   }
 };
+
+export const logOutUser = async () => {
+  try {
+    const res = await axiosClient.post(
+      `${Routes.AUTH_ROUTES}/logout`,
+      {},
+      {
+        withCredentials: true, // this enables backend to remove cookies
+      }
+    );
+
+    return res.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      return error?.response?.data;
+    }
+    return error;
+  }
+};

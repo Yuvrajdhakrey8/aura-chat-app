@@ -130,7 +130,7 @@ const Profile: React.FC = () => {
                 <AvatarImage
                   alt="profile"
                   src={image}
-                  className="object-cover h-full w-full bg-black"
+                  className="object-cover h-full w-full bg-black rounded-full"
                 />
               ) : (
                 <div
