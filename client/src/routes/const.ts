@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 
 export enum RoutesEnum {
+  HOME = "/",
   AUTH = "/auth",
   CHATS = "/chats",
   PROFILE = "/profile",

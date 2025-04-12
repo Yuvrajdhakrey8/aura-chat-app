@@ -23,11 +23,13 @@ import { IUserData } from "@/types/Auth.types";
 import toast from "react-hot-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage } from "@radix-ui/react-avatar";
-import { HOST } from "@/utils/constants";
+import { ChatTypes, HOST } from "@/utils/constants";
+import { useAppStore } from "@/store";
 
 const NewDM: React.FC = () => {
   const [openNewContactModal, setOpenNewContactModal] = useState(false);
   const [contacts, setContacts] = useState<IUserData[]>([]);
+  const { setSelectedChatData, setSelectedChatType } = useAppStore();
 
   const findContacts = (searchTerm: string) => {
     if (!searchTerm || !searchTerm.trim()) return;
@@ -48,6 +50,8 @@ const NewDM: React.FC = () => {
 
   const selectNewContact = (contact: IUserData) => {
     setOpenNewContactModal(false);
+    setSelectedChatType(ChatTypes.CONTACTS);
+    setSelectedChatData(contact);
     setContacts([]);
   };
 

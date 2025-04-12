@@ -6,6 +6,7 @@ import Profile from "@/pages/profile";
 import { AppRoute, RouteGuardProps, RoutesEnum } from "./const";
 
 export const appRoutes: AppRoute[] = [
+  { path: RoutesEnum.HOME, element: <Auth />, isPrivate: false },
   { path: RoutesEnum.AUTH, element: <Auth />, isPrivate: false },
   { path: RoutesEnum.CHATS, element: <Chat />, isPrivate: true },
   { path: RoutesEnum.PROFILE, element: <Profile />, isPrivate: true },

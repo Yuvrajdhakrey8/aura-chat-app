@@ -9,3 +9,8 @@ export enum Routes {
 export const axiosClient = axios.create({
   baseURL: HOST,
 });
+
+export enum ChatTypes {
+  CONTACTS = "contacts",
+  CHANNEL = "channel",
+}

@@ -1,10 +1,38 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ProfileInfo from "./components/ProfileInfo";
 import NewDM from "./components/NewDM";
+import { getContactsForDMList } from "@/services/ContactServices";
+import { useAppStore } from "@/store";
+import { ApiResponse } from "@/types/common.types";
+import { IUserData } from "@/types/Auth.types";
+import toast from "react-hot-toast";
+import ContactList from "@/components/ContactList";
 
 const ContactsContainer: React.FC = () => {
+  const { directMessagesContacts, setDirectMessagesContacts } = useAppStore();
+
+  const fetchDMList = () => {
+    getContactsForDMList()
+      .then((res) => {
+        const { msg, success, data } = res as ApiResponse<IUserData[]>;
+        if (!success) {
+          throw new Error(msg);
+        }
+        if (data) {
+          setDirectMessagesContacts(data);
+        }
+      })
+      .catch((err) => {
+        toast.error(err.message || "Failed to fetch contacts");
+      });
+  };
+
+  useEffect(() => {
+    fetchDMList();
+  }, []);
+
   return (
-    <div className="relative md:w-[35vw] xl:w-[20vw] bg-[#1b1c24] border-r-2 border-[#2f303b] w-full">
+    <div className="relative w-full md:w-[35vw] xl:w-[20vw] bg-[#1b1c24] border-r-2 border-[#2f303b]">
       <div className="pt-3">
         <Logo />
       </div>
@@ -12,6 +40,9 @@ const ContactsContainer: React.FC = () => {
         <div className="flex items-center justify-between pr-10">
           <Title text="Direct Messages" />
           <NewDM />
+        </div>
+        <div className="max-h-[38vh] overflow-y-auto scrollbar-hidden ">
+          <ContactList contacts={directMessagesContacts} />
         </div>
       </div>
       <div className="my-5">

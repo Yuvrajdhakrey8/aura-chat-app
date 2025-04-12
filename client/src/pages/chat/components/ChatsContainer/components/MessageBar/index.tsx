@@ -3,10 +3,15 @@ import { GrAttachment } from "react-icons/gr";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { IoSend } from "react-icons/io5";
 import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
+import { ISocketContext, useSocket } from "@/context/SocketContext";
+import { useAppStore } from "@/store";
+import { ChatTypes } from "@/utils/constants";
 
 const MessageBar: React.FC = () => {
   const emojiRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState("");
+  const { socket } = useSocket() as ISocketContext;
+  const { selectedChatType, selectedChatData, userInfo } = useAppStore();
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   const handleAddEmoji = (emoji: EmojiClickData) => {
@@ -30,6 +35,20 @@ const MessageBar: React.FC = () => {
     };
   }, [emojiRef]);
 
+  const handleSendMessage = async () => {
+    if (selectedChatType === ChatTypes.CONTACTS) {
+      socket?.emit("sendMessage", {
+        sender: userInfo?._id,
+        content: message,
+        recipient: selectedChatData?._id,
+        messageType: "text",
+        fileUrl: undefined,
+      });
+
+      setMessage("");
+    }
+  };
+
   return (
     <div className="h-[10vh] border-[#1c1d25] flex items-center justify-center px-8 mb-6 gap-6">
       <div className="flex-1 flex bg-[#2a2b33] rounded-md items-center gap-5 pr-5">
@@ -39,6 +58,12 @@ const MessageBar: React.FC = () => {
           placeholder="Enter Message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
         />
 
         <button className="text-neutral-500 focus:border-none focus:outline-none focus:text-white duration-300 transition-all cursor-pointer">
@@ -64,7 +89,10 @@ const MessageBar: React.FC = () => {
         </div>
       </div>
 
-      <button className="bg-[#8417ff] rounded-md flex items-center justify-center p-5 hover:bg-[#741bda] focus:bg-[#741bda] focus:border-none focus:outline-none focus:text-white duration-300 transition-all cursor-pointer">
+      <button
+        className="bg-[#8417ff] rounded-md flex items-center justify-center p-5 hover:bg-[#741bda] focus:bg-[#741bda] focus:border-none focus:outline-none focus:text-white duration-300 transition-all cursor-pointer"
+        onClick={handleSendMessage}
+      >
         <IoSend className="text-2xl" />
       </button>
     </div>
