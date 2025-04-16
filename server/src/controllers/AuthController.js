@@ -167,7 +167,7 @@ export const updateUserInfo = async (req, res) => {
         __dirname,
         "..",
         "..",
-        "uploads",
+        "uploads/profiles",
         path.basename(user.profileImage)
       );
 

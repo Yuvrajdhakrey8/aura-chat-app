@@ -7,6 +7,7 @@ import { ApiResponse } from "@/types/common.types";
 import { IUserData } from "@/types/Auth.types";
 import toast from "react-hot-toast";
 import ContactList from "@/components/ContactList";
+import CreateChannel from "./components/CreateChannel";
 
 const ContactsContainer: React.FC = () => {
   const { directMessagesContacts, setDirectMessagesContacts } = useAppStore();
@@ -48,6 +49,7 @@ const ContactsContainer: React.FC = () => {
       <div className="my-5">
         <div className="flex items-center justify-between pr-10">
           <Title text="Channels" />
+          <CreateChannel />
         </div>
       </div>
       <ProfileInfo />

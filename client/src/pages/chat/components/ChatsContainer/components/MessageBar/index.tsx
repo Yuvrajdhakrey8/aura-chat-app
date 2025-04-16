@@ -1,17 +1,26 @@
-import React, { useEffect, useRef, useState } from "react";
-import { GrAttachment } from "react-icons/gr";
-import { RiEmojiStickerLine } from "react-icons/ri";
-import { IoSend } from "react-icons/io5";
-import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
 import { ISocketContext, useSocket } from "@/context/SocketContext";
 import { useAppStore } from "@/store";
-import { ChatTypes } from "@/utils/constants";
+import { ApiResponse } from "@/types/common.types";
+import { axiosClient, ChatTypes, Routes } from "@/utils/constants";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
+import React, { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { GrAttachment } from "react-icons/gr";
+import { IoSend } from "react-icons/io5";
+import { RiEmojiStickerLine } from "react-icons/ri";
 
 const MessageBar: React.FC = () => {
   const emojiRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [message, setMessage] = useState("");
   const { socket } = useSocket() as ISocketContext;
-  const { selectedChatType, selectedChatData, userInfo } = useAppStore();
+  const {
+    selectedChatType,
+    selectedChatData,
+    userInfo,
+    setIsUploading,
+    setFileUploadProgress,
+  } = useAppStore();
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   const handleAddEmoji = (emoji: EmojiClickData) => {
@@ -49,6 +58,106 @@ const MessageBar: React.FC = () => {
     }
   };
 
+  const handleAttachmentClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // const handleAttachmentChange = async () => {
+  //   if (fileInputRef.current && fileInputRef.current.files) {
+  //     const fileInput = fileInputRef.current.files[0] as File;
+  //     if (fileInput) {
+  //       setIsUploading(true);
+  //       const formData = new FormData();
+  //       formData.append("file", fileInput);
+  //       await axiosClient
+  //         .post(`${Routes.CONTACT_ROUTES}/upload-files`, formData, {
+  //           withCredentials: true,
+  //           onUploadProgress: (data) => {
+  //             if (data?.total) {
+  //               setFileUploadProgress(
+  //                 Math.round((data.loaded * 100) / data.total)
+  //               );
+  //             }
+  //           },
+  //         })
+  //         .then((res) => {
+  //           const { msg, success, data } = res.data as ApiResponse<{
+  //             fileUrl: string;
+  //           }>;
+
+  //           if (!success) throw new Error(msg);
+  //           if (data && selectedChatType === ChatTypes.CONTACTS) {
+  //             socket?.emit("sendMessage", {
+  //               sender: userInfo?._id,
+  //               content: undefined,
+  //               recipient: selectedChatData?._id,
+  //               messageType: "file",
+  //               fileUrl: data.fileUrl,
+  //             });
+
+  //             setMessage("");
+  //           }
+  //         })
+  //         .catch((error) => {
+  //           toast.error(error.message || "Error uploading file");
+  //         })
+  //         .finally(() => setIsUploading(false));
+  //     }
+  //   }
+  // };
+
+  const handleAttachmentChange = async () => {
+    const fileInput = fileInputRef.current?.files?.[0];
+    if (!fileInput) return;
+
+    setIsUploading(true);
+    setFileUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append("file", fileInput);
+
+    try {
+      const res = await axiosClient.post(
+        `${Routes.CONTACT_ROUTES}/upload-files`,
+        formData,
+        {
+          withCredentials: true,
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              setFileUploadProgress(
+                Math.round((progressEvent.loaded * 100) / progressEvent.total)
+              );
+            }
+          },
+        }
+      );
+
+      const { msg, success, data } = res.data as ApiResponse<{
+        fileUrl: string;
+      }>;
+
+      if (!success) throw new Error(msg);
+
+      if (data?.fileUrl && selectedChatType === ChatTypes.CONTACTS) {
+        socket?.emit("sendMessage", {
+          sender: userInfo?._id,
+          content: undefined,
+          recipient: selectedChatData?._id,
+          messageType: "file",
+          fileUrl: data.fileUrl,
+        });
+
+        setMessage("");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Error uploading file");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="h-[10vh] border-[#1c1d25] flex items-center justify-center px-8 mb-6 gap-6">
       <div className="flex-1 flex bg-[#2a2b33] rounded-md items-center gap-5 pr-5">
@@ -66,10 +175,18 @@ const MessageBar: React.FC = () => {
           }}
         />
 
-        <button className="text-neutral-500 focus:border-none focus:outline-none focus:text-white duration-300 transition-all cursor-pointer">
+        <button
+          className="text-neutral-500 focus:border-none focus:outline-none focus:text-white duration-300 transition-all cursor-pointer"
+          onClick={handleAttachmentClick}
+        >
           <GrAttachment className="text-2xl" />
         </button>
-
+        <input
+          type="file"
+          className="hidden"
+          onChange={handleAttachmentChange}
+          ref={fileInputRef}
+        />
         <div className="relative">
           <button
             className="text-neutral-500 focus:border-none focus:outline-none focus:text-white duration-300 transition-all cursor-pointer"
