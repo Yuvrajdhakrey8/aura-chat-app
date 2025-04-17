@@ -30,8 +30,12 @@ const SocketProvider: React.FC<IProps> = ({ children }) => {
       });
 
       const handleReceiveMessage = (message: IMessageData) => {
-        const { addMessage, selectedChatType, selectedChatData } =
-          useAppStore.getState();
+        const {
+          addMessage,
+          selectedChatType,
+          selectedChatData,
+          addContactsInDMContacts,
+        } = useAppStore.getState();
 
         if (
           selectedChatType !== undefined &&
@@ -40,9 +44,28 @@ const SocketProvider: React.FC<IProps> = ({ children }) => {
         ) {
           addMessage(message);
         }
+        addContactsInDMContacts(message);
+      };
+
+      const handleReceiveChannelMessage = (message: IMessageData) => {
+        const {
+          addMessage,
+          selectedChatType,
+          selectedChatData,
+          addChannelInChannelList,
+        } = useAppStore.getState();
+
+        if (
+          selectedChatType !== undefined &&
+          selectedChatData?._id === message?.channelId
+        ) {
+          addMessage(message);
+        }
+        addChannelInChannelList(message);
       };
 
       socket.current.on("receiveMessage", handleReceiveMessage);
+      socket.current.on("receive-channel-message", handleReceiveChannelMessage);
 
       return () => {
         socket.current?.disconnect();

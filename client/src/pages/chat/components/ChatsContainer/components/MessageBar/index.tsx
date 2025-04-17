@@ -53,9 +53,16 @@ const MessageBar: React.FC = () => {
         messageType: "text",
         fileUrl: undefined,
       });
-
-      setMessage("");
+    } else if (selectedChatType === ChatTypes.CHANNEL) {
+      socket?.emit("send-channel-message", {
+        sender: userInfo?._id,
+        content: message,
+        messageType: "text",
+        fileUrl: undefined,
+        channelId: selectedChatData?._id,
+      });
     }
+    setMessage("");
   };
 
   const handleAttachmentClick = () => {
@@ -63,50 +70,6 @@ const MessageBar: React.FC = () => {
       fileInputRef.current.click();
     }
   };
-
-  // const handleAttachmentChange = async () => {
-  //   if (fileInputRef.current && fileInputRef.current.files) {
-  //     const fileInput = fileInputRef.current.files[0] as File;
-  //     if (fileInput) {
-  //       setIsUploading(true);
-  //       const formData = new FormData();
-  //       formData.append("file", fileInput);
-  //       await axiosClient
-  //         .post(`${Routes.CONTACT_ROUTES}/upload-files`, formData, {
-  //           withCredentials: true,
-  //           onUploadProgress: (data) => {
-  //             if (data?.total) {
-  //               setFileUploadProgress(
-  //                 Math.round((data.loaded * 100) / data.total)
-  //               );
-  //             }
-  //           },
-  //         })
-  //         .then((res) => {
-  //           const { msg, success, data } = res.data as ApiResponse<{
-  //             fileUrl: string;
-  //           }>;
-
-  //           if (!success) throw new Error(msg);
-  //           if (data && selectedChatType === ChatTypes.CONTACTS) {
-  //             socket?.emit("sendMessage", {
-  //               sender: userInfo?._id,
-  //               content: undefined,
-  //               recipient: selectedChatData?._id,
-  //               messageType: "file",
-  //               fileUrl: data.fileUrl,
-  //             });
-
-  //             setMessage("");
-  //           }
-  //         })
-  //         .catch((error) => {
-  //           toast.error(error.message || "Error uploading file");
-  //         })
-  //         .finally(() => setIsUploading(false));
-  //     }
-  //   }
-  // };
 
   const handleAttachmentChange = async () => {
     const fileInput = fileInputRef.current?.files?.[0];
@@ -139,16 +102,24 @@ const MessageBar: React.FC = () => {
       }>;
 
       if (!success) throw new Error(msg);
-
-      if (data?.fileUrl && selectedChatType === ChatTypes.CONTACTS) {
-        socket?.emit("sendMessage", {
-          sender: userInfo?._id,
-          content: undefined,
-          recipient: selectedChatData?._id,
-          messageType: "file",
-          fileUrl: data.fileUrl,
-        });
-
+      if (data?.fileUrl) {
+        if (selectedChatType === ChatTypes.CONTACTS) {
+          socket?.emit("sendMessage", {
+            sender: userInfo?._id,
+            content: undefined,
+            recipient: selectedChatData?._id,
+            messageType: "file",
+            fileUrl: data.fileUrl,
+          });
+        } else if (selectedChatType === ChatTypes.CHANNEL) {
+          socket?.emit("send-channel-message", {
+            sender: userInfo?._id,
+            content: undefined,
+            messageType: "file",
+            fileUrl: data.fileUrl,
+            channelId: selectedChatData?._id,
+          });
+        }
         setMessage("");
       }
     } catch (error: any) {

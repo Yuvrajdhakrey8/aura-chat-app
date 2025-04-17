@@ -1,16 +1,24 @@
-import React, { useEffect } from "react";
-import ProfileInfo from "./components/ProfileInfo";
-import NewDM from "./components/NewDM";
+import ContactList from "@/components/ContactList";
+import { getChannels } from "@/services/ChannelServices";
 import { getContactsForDMList } from "@/services/ContactServices";
 import { useAppStore } from "@/store";
-import { ApiResponse } from "@/types/common.types";
 import { IUserData } from "@/types/Auth.types";
+import { IChannelData } from "@/types/Channel.types";
+import { ApiResponse } from "@/types/common.types";
+import React, { useEffect } from "react";
 import toast from "react-hot-toast";
-import ContactList from "@/components/ContactList";
 import CreateChannel from "./components/CreateChannel";
+import NewDM from "./components/NewDM";
+import ProfileInfo from "./components/ProfileInfo";
+import ChannelList from "@/components/ChannelList";
 
 const ContactsContainer: React.FC = () => {
-  const { directMessagesContacts, setDirectMessagesContacts } = useAppStore();
+  const {
+    directMessagesContacts,
+    setDirectMessagesContacts,
+    channels,
+    setChannels,
+  } = useAppStore();
 
   const fetchDMList = () => {
     getContactsForDMList()
@@ -28,8 +36,27 @@ const ContactsContainer: React.FC = () => {
       });
   };
 
+  const fetchChannelsList = () => {
+    getChannels()
+      .then((res) => {
+        const { msg, success, data } = res as ApiResponse<{
+          channels: IChannelData[];
+        }>;
+        if (!success) {
+          throw new Error(msg);
+        }
+        if (data) {
+          setChannels(data.channels);
+        }
+      })
+      .catch((err) => {
+        toast.error(err.message || "Failed to fetch channels");
+      });
+  };
+
   useEffect(() => {
     fetchDMList();
+    fetchChannelsList();
   }, []);
 
   return (
@@ -50,6 +77,9 @@ const ContactsContainer: React.FC = () => {
         <div className="flex items-center justify-between pr-10">
           <Title text="Channels" />
           <CreateChannel />
+        </div>
+        <div className="max-h-[38vh] overflow-y-auto scrollbar-hidden ">
+          <ChannelList channelsData={channels} />
         </div>
       </div>
       <ProfileInfo />

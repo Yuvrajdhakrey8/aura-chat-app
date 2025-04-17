@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import authRoutes from "./src/routes/AuthRoutes.js";
 import contactRoutes from "./src/routes/ContactRoutes.js";
+import channelRoutes from "./src/routes/ChannelRoutes.js";
 import socket from "./socket.js";
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use("/uploads/profiles", express.static("uploads/profiles"));
 app.use("/uploads/files", express.static("uploads/files"));
 app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactRoutes);
+app.use("/api/channel", channelRoutes);
 
 const server = app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

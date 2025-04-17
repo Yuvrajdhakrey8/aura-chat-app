@@ -1,4 +1,5 @@
 import { IUserData } from "@/types/Auth.types";
+import { IChannelData } from "@/types/Channel.types";
 import { IMessageData } from "@/types/Message.types";
 import { ChatTypes } from "@/utils/constants";
 import { StateCreator } from "zustand";
@@ -12,6 +13,7 @@ export interface ChatSlice {
   isDownloading: boolean;
   fileUploadProgress: number;
   fileDownloadProgress: number;
+  channels: IChannelData[];
   setIsUploading: (isUploading: boolean) => void;
   setIsDownloading: (isDownloading: boolean) => void;
   setFileUploadProgress: (fileUploadProgress: number) => void;
@@ -26,6 +28,10 @@ export interface ChatSlice {
   ) => void;
   closeChat: () => void;
   addMessage: (message: IMessageData) => void;
+  addChannel: (channel: IChannelData) => void;
+  setChannels: (channels: IChannelData[]) => void;
+  addChannelInChannelList: (message: IMessageData) => void;
+  addContactsInDMContacts: (message: IMessageData) => void;
 }
 
 export const createChatSlice: StateCreator<ChatSlice> = (
@@ -40,6 +46,8 @@ export const createChatSlice: StateCreator<ChatSlice> = (
   isDownloading: false,
   fileUploadProgress: 0,
   fileDownloadProgress: 0,
+  channels: [],
+  setChannels: (channels: IChannelData[]) => set({ channels }),
   setIsUploading: (isUploading: boolean) => set({ isUploading }),
   setIsDownloading: (isDownloading: boolean) => set({ isDownloading }),
   setFileUploadProgress: (fileUploadProgress: number) =>
@@ -61,6 +69,12 @@ export const createChatSlice: StateCreator<ChatSlice> = (
       selectedChatData: undefined,
       selectedChatMessages: [],
     }),
+  addChannel: (channel: IChannelData) => {
+    const channels = get().channels;
+    set({
+      channels: [...channels, channel],
+    });
+  },
   addMessage: (message: IMessageData) => {
     const selectedChatMessages = get().selectedChatMessages;
     const selectedChatType = get().selectedChatType;
@@ -81,5 +95,44 @@ export const createChatSlice: StateCreator<ChatSlice> = (
         },
       ],
     });
+  },
+  addChannelInChannelList: (message: IMessageData) => {
+    const channels = get().channels;
+    const data = channels.find(
+      (channel: IChannelData) => channel._id === message.channelId
+    );
+    const index = channels.findIndex(
+      (channel: IChannelData) => channel._id === message.channelId
+    );
+
+    if (index !== -1 && index !== undefined) {
+      channels.splice(index, 1);
+      channels.unshift(data as IChannelData);
+    }
+  },
+  addContactsInDMContacts: (message: IMessageData) => {
+    const userId = get().userInfo._id;
+    const fromId =
+      message.sender._id === userId
+        ? message?.recipient?._id
+        : message.sender._id;
+    const fromData =
+      message.sender._id === userId ? message.recipient : message.sender;
+    const dmContacts = get().directMessagesContacts;
+    const data = dmContacts.find(
+      (contact: IUserData) => contact._id === fromId
+    );
+    const index = dmContacts.findIndex(
+      (contact: IUserData) => contact._id === fromId
+    );
+
+    if (index !== -1 && index !== undefined) {
+      dmContacts.splice(index, 1);
+      dmContacts.unshift(data);
+    } else {
+      dmContacts.unshift(fromData);
+    }
+
+    set({ directMessagesContacts: dmContacts });
   },
 });

@@ -15,36 +15,43 @@ const ChatHeader: React.FC = () => {
           {selectedChatData && (
             <div className="flex gap-3">
               <div className="w-12 h-12 relative">
-                <Avatar className="h-12 w-12 rounded-full overflow-hidden">
-                  {selectedChatData?.profileImage ? (
-                    <AvatarImage
-                      alt="profile"
-                      src={`${HOST}/${selectedChatData.profileImage}`}
-                      className="object-cover w-full h-full bg-black rounded-full"
-                    />
-                  ) : (
-                    <div
-                      className={`uppercase h-12 w-12 text-lg border-[1px] flex items-center justify-center rounded-full ${getColor(
-                        selectedChatData?.selectedColor ?? 0
-                      )}`}
-                    >
-                      {selectedChatData?.firstName && selectedChatData?.lastName
-                        ? `${selectedChatData.firstName
-                            .split("")
-                            .shift()} ${selectedChatData.lastName
-                            .split("")
-                            .shift()}`
-                        : selectedChatData?.email.split("").shift()}
-                    </div>
-                  )}
-                </Avatar>
+                {selectedChatType === ChatTypes.CONTACTS ? (
+                  <Avatar className="h-12 w-12 rounded-full overflow-hidden">
+                    {selectedChatData?.profileImage ? (
+                      <AvatarImage
+                        alt="profile"
+                        src={`${HOST}/${selectedChatData.profileImage}`}
+                        className="object-cover w-full h-full bg-black rounded-full"
+                      />
+                    ) : (
+                      <div
+                        className={`uppercase h-12 w-12 text-lg border-[1px] flex items-center justify-center rounded-full ${getColor(
+                          selectedChatData?.selectedColor ?? 0
+                        )}`}
+                      >
+                        {selectedChatData?.firstName &&
+                        selectedChatData?.lastName
+                          ? `${selectedChatData.firstName
+                              .split("")
+                              .shift()} ${selectedChatData.lastName
+                              .split("")
+                              .shift()}`
+                          : selectedChatData?.email.split("").shift()}
+                      </div>
+                    )}
+                  </Avatar>
+                ) : (
+                  <div className="bg-[#ffffff22] h-10 w-10 flex items-center justify-center rounded-full ">
+                    #
+                  </div>
+                )}
               </div>
-              <div className=" m-auto">
+              <div className="m-auto">
                 {selectedChatType === ChatTypes.CONTACTS
                   ? selectedChatData?.firstName && selectedChatData.lastName
                     ? `${selectedChatData.firstName} ${selectedChatData.lastName}`
                     : selectedChatData.email
-                  : "Group Name"}
+                  : selectedChatData?.name}
               </div>
             </div>
           )}

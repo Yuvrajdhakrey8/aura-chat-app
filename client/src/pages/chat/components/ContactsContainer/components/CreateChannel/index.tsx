@@ -16,8 +16,10 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MultipleSelector from "@/components/ui/multipleselect";
+import { createChannel } from "@/services/ChannelServices";
 import { getAllContacts } from "@/services/ContactServices";
 import { useAppStore } from "@/store";
+import { IChannelData } from "@/types/Channel.types";
 import { ApiResponse } from "@/types/common.types";
 import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa";
@@ -32,9 +34,8 @@ interface IOptions {
 }
 
 const CreateChannel: React.FC = () => {
-  const { setSelectedChatData, setSelectedChatType } = useAppStore();
-  const [openNewContactModal, setOpenNewContactModal] = useState(false);
-  const [searchedContacts, setSearchedContacts] = useState<IUser[]>([]);
+  const { addChannel } = useAppStore();
+  const [openNewChannelModal, setOpenNewChannelModal] = useState(false);
   const [allContacts, setAllContacts] = useState<IOptions[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<IOptions[]>([]);
   const [channelName, setChannelName] = useState("");
@@ -63,7 +64,35 @@ const CreateChannel: React.FC = () => {
     handleGetAllContacts();
   }, []);
 
-  const createChannel = async () => {};
+  const newChannel = async () => {
+    if (!channelName || selectedContacts.length === 0) {
+      return toast.error("Please fill all the fields");
+    }
+
+    const payload = {
+      name: channelName,
+      members: selectedContacts.map((contact) => contact.value),
+    };
+
+    createChannel(payload)
+      .then((res) => {
+        const { success, msg, data } = res as ApiResponse<{
+          channel: IChannelData;
+        }>;
+        if (!success) throw new Error(msg);
+
+        if (data) {
+          const { channel } = data;
+          addChannel(channel);
+          setOpenNewChannelModal(false);
+          setChannelName("");
+          setSelectedContacts([]);
+        }
+      })
+      .catch((err: Error) => {
+        toast.error(err.message || "Internal server error");
+      });
+  };
 
   return (
     <>
@@ -72,7 +101,7 @@ const CreateChannel: React.FC = () => {
           <TooltipTrigger>
             <FaPlus
               className="text-neutral-400 font-light opacity-90 text-start hover:text-neutral-100 cursor-pointer transition-all duration-300"
-              onClick={() => setOpenNewContactModal(true)}
+              onClick={() => setOpenNewChannelModal(true)}
             />
           </TooltipTrigger>
           <TooltipContent className="bg-[#1c1b1e] border-none mb-2 p-3 text-white">
@@ -81,7 +110,7 @@ const CreateChannel: React.FC = () => {
         </Tooltip>
       </TooltipProvider>
 
-      <Dialog open={openNewContactModal} onOpenChange={setOpenNewContactModal}>
+      <Dialog open={openNewChannelModal} onOpenChange={setOpenNewChannelModal}>
         <DialogContent className="bg-[#181920] border-none text-white w-[400px] h-[400px] flex flex-col ">
           <DialogHeader>
             <DialogTitle>Please select a contact</DialogTitle>
@@ -116,8 +145,8 @@ const CreateChannel: React.FC = () => {
           </div>
           <div>
             <Button
-              className="w-full bg-purple-700 hover:bg-purple-900 transition-all duration-300"
-              onClick={() => createChannel()}
+              className="w-full bg-purple-700 hover:bg-purple-900 transition-all duration-300 cursor-pointer"
+              onClick={() => newChannel()}
             >
               Create Channel
             </Button>

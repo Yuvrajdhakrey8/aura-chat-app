@@ -11,5 +11,6 @@ export interface IUserData {
   lastName?: string;
   profileImage?: string;
   isSetUpComplete: boolean;
+  name?: string;
   selectedColor?: number;
 }

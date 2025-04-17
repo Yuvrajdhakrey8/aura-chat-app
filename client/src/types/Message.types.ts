@@ -7,6 +7,7 @@ export interface IMessageData {
   messageType: MESSAGE_TYPE;
   content?: string;
   fileUrl?: string;
+  channelId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -10,10 +10,14 @@ import { MdFolderZip } from "react-icons/md";
 import { IoMdArrowRoundDown } from "react-icons/io";
 import { MdDelete } from "react-icons/md";
 import { IoCloseSharp } from "react-icons/io5";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getColor } from "@/lib/utils";
+import { getChannelMessages } from "@/services/ChannelServices";
 
 const MessageContainer: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const {
+    userInfo,
     selectedChatMessages,
     selectedChatType,
     selectedChatData,
@@ -40,9 +44,28 @@ const MessageContainer: React.FC = () => {
     }
   };
 
+  const fetchChannelMessages = async () => {
+    if (selectedChatData) {
+      getChannelMessages(selectedChatData?._id)
+        .then((res) => {
+          const { msg, success, data } = res as ApiResponse<IMessageData[]>;
+          if (!success) {
+            throw new Error(msg);
+          }
+          setSelectedChatMessages(data);
+        })
+        .catch((err: any) => {
+          toast.error(err.message || "Error fetching messages");
+        });
+    }
+  };
+
   useEffect(() => {
     if (selectedChatData) {
       fetchMessages();
+    }
+    if (selectedChatType === ChatTypes.CHANNEL) {
+      fetchChannelMessages();
     }
   }, [selectedChatData]);
 
@@ -61,7 +84,7 @@ const MessageContainer: React.FC = () => {
   const renderMessages = () => {
     let lastDate: any = null;
 
-    return selectedChatMessages.map((msg) => {
+    return selectedChatMessages?.map((msg) => {
       const messageDate = moment(msg.createdAt).format("YYYY-MM-DD");
       const showDate = messageDate !== lastDate;
       lastDate = messageDate;
@@ -74,6 +97,7 @@ const MessageContainer: React.FC = () => {
             </div>
           )}
           {selectedChatType === ChatTypes.CONTACTS && renderDMMessages(msg)}
+          {selectedChatType === ChatTypes.CHANNEL && renderChannelMessages(msg)}
         </div>
       );
     });
@@ -105,8 +129,8 @@ const MessageContainer: React.FC = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(urlBlob);
-    } catch (err) {
-      console.error("Error downloading file", err);
+    } catch (error: any) {
+      toast.error(error?.message || "Error downloading file");
     } finally {
       setIsDownloading(false);
     }
@@ -187,6 +211,114 @@ const MessageContainer: React.FC = () => {
         <div className="text-xs text-gray-600 ">
           {moment(message.createdAt).format("LT")}
         </div>
+      </div>
+    );
+  };
+
+  const renderChannelMessages = (message: any) => {
+    return (
+      <div
+        className={`${
+          message?.sender?._id !== userInfo?._id ? "text-left" : "text-right"
+        } mt-2`}
+      >
+        {message.messageType === MESSAGE_TYPE.TEXT && (
+          <div
+            className={`${
+              message?.sender?._id === userInfo?._id
+                ? "bg-[#8417ff]/5 text-[#8417ff]/90 border-[#8417ff]/50 rounded-tr-[0] "
+                : "bg-[#2a2b33]/5 text-white/80 border-[#fff]/20 rounded-tl-[0]"
+            } border inline-block text-start rounded-lg max-w-[50%] break-words px-3 py-2 my-1 ml-9`}
+          >
+            {message?.content}
+          </div>
+        )}
+        {message.messageType === MESSAGE_TYPE.FILE && (
+          <div
+            className={`${
+              message?.sender?._id === userInfo?._id
+                ? "bg-[#8417ff]/5 text-[#8417ff]/90 border-[#8417ff]/50 rounded-tr-[0] "
+                : "bg-[#2a2b33]/5 text-white/80 border-[#fff]/20 rounded-tl-[0]"
+            } border inline-block text-start rounded-lg max-w-[50%] break-words p-[6px] my-1`}
+          >
+            {checkIfImage(message?.fileUrl) ? (
+              <div
+                className="cursor-pointer"
+                onClick={() => {
+                  setImageUrl(message?.fileUrl);
+                  setShowImage(true);
+                }}
+              >
+                <img
+                  src={`${HOST}/${message.fileUrl}`}
+                  alt="file"
+                  height={300}
+                  width={300}
+                  className="rounded-[6px]"
+                />
+              </div>
+            ) : (
+              <div className="flex justify-center items-center gap-4 flex-wrap">
+                <span className="text-white/80 text-3xl bg-black/20 rounded-full p-3">
+                  <MdFolderZip />
+                </span>
+                <span className="text-white">
+                  {message?.fileUrl?.split("/").pop()}
+                </span>
+                <span
+                  className="bg-black/20 p-3 duration-300 transition-all hover:bg-black/50 rounded-full text-2xl cursor-pointer"
+                  onClick={() => downloadFile(message?.fileUrl)}
+                  title="Download"
+                >
+                  <IoMdArrowRoundDown />
+                </span>
+                <button
+                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full cursor-pointer duration-300 transition-all text-2xl"
+                  onClick={() => handleDeleteMessage(message?._id)}
+                  title="Delete"
+                >
+                  <MdDelete />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {message?.sender?._id !== userInfo?._id ? (
+          <div className="flex items-center gap-3 mt-1">
+            <Avatar className="h-6 w-6 rounded-full overflow-hidden">
+              {message.sender?.profileImage && (
+                <AvatarImage
+                  alt="profile"
+                  src={`${HOST}/${message.sender.profileImage}`}
+                  className="object-cover w-full h-full bg-black rounded-full"
+                />
+              )}
+
+              <AvatarFallback
+                className={`uppercase h-6 w-6 text-lg flex items-center justify-center rounded-full ${getColor(
+                  message.sender?.selectedColor ?? 0
+                )}`}
+              >
+                {message.sender?.firstName && message.sender?.lastName
+                  ? `${message.sender.firstName
+                      .split("")
+                      .shift()} ${message.sender.lastName.split("").shift()}`
+                  : message.sender?.email.split("").shift()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-gray-60">
+              {message.sender?.firstName} {message.sender?.lastName}
+            </span>
+            <span className="text-xs text-gray-600 ">
+              {moment(message.createdAt).format("LT")}
+            </span>
+          </div>
+        ) : (
+          <div className="text-xs text-gray-600 ">
+            {moment(message.createdAt).format("LT")}
+          </div>
+        )}
       </div>
     );
   };
