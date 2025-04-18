@@ -86,3 +86,20 @@ export const getAllContacts = async () => {
     return error;
   }
 };
+
+export const deleteMessage = async (messageId: string) => {
+  try {
+    const res = await axiosClient.delete(
+      `${Routes.CONTACT_ROUTES}/messages/${messageId}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return res.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      return error?.response?.data;
+    }
+    return error;
+  }
+};

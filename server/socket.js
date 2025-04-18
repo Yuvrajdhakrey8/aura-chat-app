@@ -1,9 +1,11 @@
 import { Server as SocketIoServer } from "socket.io";
-import { MessageModel } from "./src/models/MessageModel.js";
 import { ChannelModel } from "./src/models/ChannelModel.js";
+import { MessageModel } from "./src/models/MessageModel.js";
+
+let io;
 
 const setupSocket = (server) => {
-  const io = new SocketIoServer(server, {
+  io = new SocketIoServer(server, {
     cors: {
       origin: process.env.ORIGIN,
       methods: ["GET", "POST"],
@@ -75,6 +77,69 @@ const setupSocket = (server) => {
     }
   };
 
+  const deleteMessage = async ({ messageId }) => {
+    try {
+      const message = await MessageModel.findById(messageId);
+
+      if (!message) return;
+
+      // Delete attached file if it's a file-type message
+      if (message.messageType === "file" && message.fileUrl) {
+        try {
+          const fullPath = path.resolve(message.fileUrl);
+          unlinkSync(fullPath);
+        } catch (err) {
+          console.warn("Failed to delete file from disk:", err.message);
+        }
+      }
+
+      await MessageModel.findByIdAndDelete(messageId);
+
+      const payload = {
+        messageId,
+        chatId: message.recipient || message.channelId || null,
+      };
+
+      // For channel messages
+      if (!message.recipient && message.channelId) {
+        const channel = await ChannelModel.findById(message.channelId).populate(
+          "members"
+        );
+        if (channel) {
+          channel.members.forEach((member) => {
+            const memberSocketId = userSocketMap.get(member._id.toString());
+            if (memberSocketId) {
+              io.to(memberSocketId).emit("messageDeleted", payload);
+            }
+          });
+
+          // Emit to channel admin too
+          const adminSocketId = userSocketMap.get(channel.admin.toString());
+          if (adminSocketId) {
+            io.to(adminSocketId).emit("messageDeleted", payload);
+          }
+        }
+      }
+
+      // For private messages
+      if (message.recipient) {
+        const senderSocketId = userSocketMap.get(message.sender.toString());
+        const recipientSocketId = userSocketMap.get(
+          message.recipient.toString()
+        );
+
+        if (senderSocketId) {
+          io.to(senderSocketId).emit("messageDeleted", payload);
+        }
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit("messageDeleted", payload);
+        }
+      }
+    } catch (err) {
+      console.error("Error deleting message:", err.message);
+    }
+  };
+
   io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId;
 
@@ -86,6 +151,7 @@ const setupSocket = (server) => {
     }
 
     socket.on("sendMessage", sendMessage);
+    socket.on("deleteMessage", deleteMessage);
     socket.on("send-channel-message", sendChannelMessage);
 
     socket.on("disconnect", () => {
@@ -101,3 +167,5 @@ const setupSocket = (server) => {
 };
 
 export default setupSocket;
+
+export { io };

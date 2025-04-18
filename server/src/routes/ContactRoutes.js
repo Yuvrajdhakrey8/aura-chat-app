@@ -6,7 +6,10 @@ import {
   uploadFiles,
 } from "../controllers/ContactsController.js";
 import { verifyToken } from "../middlewares/AuthMiddleware.js";
-import { getMessages } from "../controllers/MessagesController.js";
+import {
+  deleteMessage,
+  getMessages,
+} from "../controllers/MessagesController.js";
 import multer from "multer";
 
 const router = Router();
@@ -18,5 +21,6 @@ router.post("/get-messages", verifyToken, getMessages);
 router.get("/get-dm-list", verifyToken, getContactsForDMList);
 router.get("/get-all-contacts", verifyToken, getAllContacts);
 router.post("/upload-files", verifyToken, upload.single("file"), uploadFiles);
+router.delete("/messages/:messageId", verifyToken, deleteMessage);
 
 export default router;

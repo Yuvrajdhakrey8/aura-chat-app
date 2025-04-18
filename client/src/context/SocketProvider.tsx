@@ -29,6 +29,14 @@ const SocketProvider: React.FC<IProps> = ({ children }) => {
         console.log("Connected to socket server", socket.current?.id);
       });
 
+      socket.current.on(
+        "messageDeleted",
+        ({ messageId }: { messageId: string }) => {
+          const { removeMessage } = useAppStore.getState();
+          removeMessage(messageId);
+        }
+      );
+
       const handleReceiveMessage = (message: IMessageData) => {
         const {
           addMessage,

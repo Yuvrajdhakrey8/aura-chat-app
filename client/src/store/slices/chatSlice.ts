@@ -27,6 +27,7 @@ export interface ChatSlice {
     selectedChatMessages: IMessageData[] | undefined
   ) => void;
   closeChat: () => void;
+  removeMessage: (messageId: string) => void;
   addMessage: (message: IMessageData) => void;
   addChannel: (channel: IChannelData) => void;
   setChannels: (channels: IChannelData[]) => void;
@@ -95,6 +96,13 @@ export const createChatSlice: StateCreator<ChatSlice> = (
         },
       ],
     });
+  },
+  removeMessage: (messageId: string) => {
+    const currentMessages = get().selectedChatMessages;
+    const updatedMessages = currentMessages.filter(
+      (msg: IMessageData) => msg._id !== messageId
+    );
+    set({ selectedChatMessages: updatedMessages });
   },
   addChannelInChannelList: (message: IMessageData) => {
     const channels = get().channels;

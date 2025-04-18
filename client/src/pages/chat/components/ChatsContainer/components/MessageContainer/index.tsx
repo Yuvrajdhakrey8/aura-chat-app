@@ -1,18 +1,17 @@
-import { useAppStore } from "@/store";
-import React, { useEffect, useRef, useState } from "react";
-import moment from "moment";
-import { axiosClient, ChatTypes, HOST } from "@/utils/constants";
-import { IMessageData, MESSAGE_TYPE } from "@/types/Message.types";
-import { getMessages } from "@/services/ContactServices";
-import { ApiResponse } from "@/types/common.types";
-import toast from "react-hot-toast";
-import { MdFolderZip } from "react-icons/md";
-import { IoMdArrowRoundDown } from "react-icons/io";
-import { MdDelete } from "react-icons/md";
-import { IoCloseSharp } from "react-icons/io5";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getColor } from "@/lib/utils";
 import { getChannelMessages } from "@/services/ChannelServices";
+import { deleteMessage, getMessages } from "@/services/ContactServices";
+import { useAppStore } from "@/store";
+import { ApiResponse } from "@/types/common.types";
+import { IMessageData, MESSAGE_TYPE } from "@/types/Message.types";
+import { axiosClient, ChatTypes, HOST } from "@/utils/constants";
+import moment from "moment";
+import React, { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { IoMdArrowRoundDown } from "react-icons/io";
+import { IoCloseSharp } from "react-icons/io5";
+import { MdDelete, MdFolderZip } from "react-icons/md";
 
 const MessageContainer: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -26,7 +25,9 @@ const MessageContainer: React.FC = () => {
     setIsDownloading,
   } = useAppStore();
   const [showImage, setShowImage] = useState(false);
-  const [imageUrl, setImageUrl] = useState(null);
+  const [selectedMessage, setSelectedMessage] = useState<IMessageData | null>(
+    null
+  );
 
   const fetchMessages = async () => {
     if (selectedChatData) {
@@ -137,7 +138,24 @@ const MessageContainer: React.FC = () => {
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    console.log("🚀 ~ handleDeleteMessage ~ messageId:", messageId);
+    try {
+      const result = await deleteMessage(messageId);
+      const { success, msg } = result as ApiResponse<null>;
+
+      if (success) {
+        const updatedMessages = selectedChatMessages.filter(
+          (message) => message._id !== messageId
+        );
+        setSelectedChatMessages(updatedMessages);
+        toast.success("Message deleted successfully!");
+        setSelectedMessage(null);
+        setShowImage(false);
+      } else {
+        toast.error(msg || "Failed to delete message");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Error deleting message");
+    }
   };
 
   const renderDMMessages = (message: any) => {
@@ -170,7 +188,7 @@ const MessageContainer: React.FC = () => {
               <div
                 className="cursor-pointer"
                 onClick={() => {
-                  setImageUrl(message?.fileUrl);
+                  setSelectedMessage(message);
                   setShowImage(true);
                 }}
               >
@@ -197,13 +215,25 @@ const MessageContainer: React.FC = () => {
                 >
                   <IoMdArrowRoundDown />
                 </span>
-                <button
-                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full cursor-pointer duration-300 transition-all text-2xl"
-                  onClick={() => handleDeleteMessage(message?._id)}
-                  title="Delete"
-                >
-                  <MdDelete />
-                </button>
+                {(() => {
+                  const isChannel =
+                    selectedChatType === ChatTypes.CONTACTS &&
+                    message?.sender === userInfo?._id;
+                  if (isChannel) {
+                    return (
+                      <button
+                        className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full cursor-pointer duration-300 transition-all text-2xl"
+                        onClick={() =>
+                          message && handleDeleteMessage(message._id)
+                        }
+                        title="Delete"
+                      >
+                        <MdDelete />
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
           </div>
@@ -245,7 +275,7 @@ const MessageContainer: React.FC = () => {
               <div
                 className="cursor-pointer"
                 onClick={() => {
-                  setImageUrl(message?.fileUrl);
+                  setSelectedMessage(message);
                   setShowImage(true);
                 }}
               >
@@ -262,7 +292,7 @@ const MessageContainer: React.FC = () => {
                 <span className="text-white/80 text-3xl bg-black/20 rounded-full p-3">
                   <MdFolderZip />
                 </span>
-                <span className="text-white">
+                <span className="text-white max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">
                   {message?.fileUrl?.split("/").pop()}
                 </span>
                 <span
@@ -272,13 +302,25 @@ const MessageContainer: React.FC = () => {
                 >
                   <IoMdArrowRoundDown />
                 </span>
-                <button
-                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full cursor-pointer duration-300 transition-all text-2xl"
-                  onClick={() => handleDeleteMessage(message?._id)}
-                  title="Delete"
-                >
-                  <MdDelete />
-                </button>
+                {(() => {
+                  const isChannel =
+                    selectedChatType === ChatTypes.CHANNEL &&
+                    message?.sender?._id === userInfo?._id;
+                  if (isChannel) {
+                    return (
+                      <button
+                        className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full cursor-pointer duration-300 transition-all text-2xl"
+                        onClick={() =>
+                          message && handleDeleteMessage(message._id)
+                        }
+                        title="Delete"
+                      >
+                        <MdDelete />
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
           </div>
@@ -331,29 +373,58 @@ const MessageContainer: React.FC = () => {
         <div className="fixed inset-0 left-0 top-0 h-[100vh] w-[100vw] backdrop-blur-lg bg-black/80 flex justify-center items-center z-50">
           <div>
             <img
-              src={`${HOST}/${imageUrl}`}
+              src={`${HOST}/${selectedMessage?.fileUrl}`}
               alt="file"
               className="rounded-[6px] h-[80vh] w-full bg-cover"
             />
           </div>
           <div className="flex gap-5 fixed top-0 mt-5">
             <button
-              className="bg-black/80 p-3 rounded-full hover:bg-white/10 cursor-pointer transition-all duration-300  text-blue-400 text-2xl"
-              onClick={() => imageUrl && downloadFile(imageUrl)}
-              title="Download"
-            >
-              <IoMdArrowRoundDown />
-            </button>
-            <button
               className="bg-black/80 p-3 rounded-full hover:bg-white/10 cursor-pointer transition-all duration-300  text-red-200 text-2xl"
               onClick={() => {
                 setShowImage(false);
-                setImageUrl(null);
+
+                setSelectedMessage(null);
               }}
               title="Close"
             >
               <IoCloseSharp />
             </button>
+            <button
+              className="bg-black/80 p-3 rounded-full hover:bg-white/10 cursor-pointer transition-all duration-300  text-blue-400 text-2xl"
+              onClick={() =>
+                selectedMessage?.fileUrl &&
+                downloadFile(selectedMessage?.fileUrl)
+              }
+              title="Download"
+            >
+              <IoMdArrowRoundDown />
+            </button>
+
+            {(() => {
+              const isContacts =
+                selectedChatType === ChatTypes.CONTACTS &&
+                selectedMessage?.sender === userInfo?._id;
+              const isChannel =
+                selectedChatType === ChatTypes.CHANNEL &&
+                selectedMessage?.sender?._id === userInfo?._id;
+
+              if (isContacts || isChannel) {
+                return (
+                  <button
+                    className="text-red-500 hover:text-red-600 p-2 rounded-full cursor-pointer duration-300 transition-all text-2xl"
+                    onClick={() =>
+                      selectedMessage &&
+                      handleDeleteMessage(selectedMessage._id)
+                    }
+                    title="Delete"
+                  >
+                    <MdDelete />
+                  </button>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
       )}
