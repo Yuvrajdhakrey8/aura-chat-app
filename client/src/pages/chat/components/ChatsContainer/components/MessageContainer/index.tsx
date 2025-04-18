@@ -269,7 +269,7 @@ const MessageContainer: React.FC = () => {
               message?.sender?._id === userInfo?._id
                 ? "bg-[#8417ff]/5 text-[#8417ff]/90 border-[#8417ff]/50 rounded-tr-[0] "
                 : "bg-[#2a2b33]/5 text-white/80 border-[#fff]/20 rounded-tl-[0]"
-            } border inline-block text-start rounded-lg max-w-[50%] break-words p-[6px] my-1`}
+            } border inline-block text-start rounded-lg max-w-[50%] break-words p-[6px] my-1 ml-9`}
           >
             {checkIfImage(message?.fileUrl) ? (
               <div
